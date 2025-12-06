@@ -10,6 +10,7 @@ plugins {
     application
 
     // Checker Framework pluggable type-checking
+ 
     id("org.checkerframework") version "0.6.60"
 }
 
@@ -42,10 +43,14 @@ dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
 
-    compileOnly("org.checkerframework:checker-qual:3.51.2-SNAPSHOT")
-    testCompileOnly("org.checkerframework:checker-qual:3.51.2-SNAPSHOT")
-    checkerFramework("org.checkerframework:checker:3.51.2-SNAPSHOT")
+    compileOnly("org.checkerframework:checker-qual:3.52.1-SNAPSHOT")
+    testCompileOnly("org.checkerframework:checker-qual:3.52.1-SNAPSHOT")
+    checkerFramework("org.checkerframework:checker:3.52.1-SNAPSHOT")
 }
+
+// checkerFramework {
+//   skipCheckerFramework = true
+// }
 
 // Apply a specific Java toolchain to ease working on different environments.
 java {
@@ -56,7 +61,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "demo2.App"
+    mainClass = "demo2.Main"
 }
 
 tasks.named<Test>("test") {
