@@ -127,6 +127,9 @@ public class Main {
         // modifiableDequeDemo();
 
         // queueDemo();
+
+        testLinkedTransferQueueDrainToUOE();
+        testLinkedTransferQueueDrainToMaxUOE();
     }
 
     public static void mapEntryDemo() {
@@ -258,6 +261,36 @@ public class Main {
             }
         } catch (UnsupportedOperationException e) {
              System.out.println("Caught Expected UnsupportedOperationException (iterator.remove): " + e);
+        }
+    }
+
+    public static void testLinkedTransferQueueDrainToUOE() {
+        System.out.println("\nTesting LinkedTransferQueue.drainTo with unmodifiable collection...");
+        LinkedTransferQueue<String> queue = new LinkedTransferQueue<>();
+        queue.add("element");
+        
+        Collection<String> unmodifiableSink = Collections.unmodifiableList(new ArrayList<>());
+        
+        try {
+            queue.drainTo(unmodifiableSink);
+            System.out.println("Failed: drainTo did not throw UnsupportedOperationException");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Passed: drainTo threw UnsupportedOperationException");
+        }
+    }
+
+    public static void testLinkedTransferQueueDrainToMaxUOE() {
+        System.out.println("\nTesting LinkedTransferQueue.drainTo(max) with unmodifiable collection...");
+        LinkedTransferQueue<String> queue = new LinkedTransferQueue<>();
+        queue.add("element");
+        
+        Collection<String> unmodifiableSink = Collections.unmodifiableList(new ArrayList<>());
+        
+        try {
+            queue.drainTo(unmodifiableSink, 10);
+            System.out.println("Failed: drainTo(max) did not throw UnsupportedOperationException");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Passed: drainTo(max) threw UnsupportedOperationException");
         }
     }
 }
