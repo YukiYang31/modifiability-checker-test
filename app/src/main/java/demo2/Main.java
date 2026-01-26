@@ -12,6 +12,16 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Deque;
 import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.Collection;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TransferQueue;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class Main {
     void sample() {
@@ -34,7 +44,7 @@ public class Main {
         @Modifiable List<String> modifiableList = new @Modifiable ArrayList<>();
         modifiableList.add("hello");
         modifiableList.add("world");
-        System.out.println("Before replaceAll (modifiable): " + modifiableList);
+        System.out.println("Before any modification (modifiable): " + modifiableList);
         // modifiableList.replaceAll(String::toUpperCase);
         // System.out.println("After replaceAll (modifiable): " + modifiableList);
 
@@ -43,7 +53,9 @@ public class Main {
         // System.out.println("After sort (modifiable): " + modifiableList);
 
         // Now an unmodifiable list: calling replaceAll should throw UnsupportedOperationException
-        @Unmodifiable List<String> unmodifiableList = Collections.unmodifiableList(List.of("hello", "world"));
+        // @Unmodifiable List<String> unmodifiableList = Collections.unmodifiableList(List.of("hello", "world"));
+        @Unmodifiable List<String> unmodifiableList = List.of("hello", "world");
+
         System.out.println("Unmodifiable list created from unmodList" + unmodifiableList);
         // try {
         //     unmodifiableList.replaceAll(String::toUpperCase); // should throw UnsupportedOperationException
@@ -157,8 +169,81 @@ public class Main {
         try {
             @Unmodifiable Deque<String> unmodDeque = (Deque<String>) Collections.unmodifiableCollection(modDeque);
         } catch (ClassCastException e) {
+            // java.util.Collections.UnmodifiableCollection cannot be cast to class java.util.Deque. 
             System.out.println("Caught ClassCastException when casting unmodifiableCollection to Deque: " + e);
             e.printStackTrace(System.out);
+        }
+
+        // queueDemo();
+    }
+
+    
+
+    public static void queueDemo() {
+        System.out.println("\n--- Queue Demo ---");
+
+        // 1. Queue (LinkedList)
+        Queue<String> queue = new LinkedList<>();
+        queue.offer("First");
+        queue.offer("Second");
+        System.out.println("Queue (LinkedList): " + queue);
+
+        // 2. Deque (ArrayDeque)
+        Deque<String> deque = new ArrayDeque<>();
+        deque.offerFirst("Head");
+        deque.offerLast("Tail");
+        System.out.println("Deque (ArrayDeque): " + deque);
+
+        // 3. BlockingQueue (ArrayBlockingQueue)
+        BlockingQueue<String> blockingQueue = new ArrayBlockingQueue<>(10);
+        blockingQueue.offer("Block1");
+        System.out.println("BlockingQueue (ArrayBlockingQueue): " + blockingQueue);
+
+        // 4. TransferQueue (LinkedTransferQueue)
+        TransferQueue<String> transferQueue = new LinkedTransferQueue<>();
+        transferQueue.offer("Transfer1");
+        System.out.println("TransferQueue (LinkedTransferQueue): " + transferQueue);
+
+        // 5. BlockingDeque (LinkedBlockingDeque)
+        BlockingDeque<String> blockingDeque = new LinkedBlockingDeque<>();
+        blockingDeque.offerFirst("BDequeHead");
+        System.out.println("BlockingDeque (LinkedBlockingDeque): " + blockingDeque);
+
+        // 6. ArrayQueue (using ArrayDeque as representative)
+        // Note: Java does not have a class specifically named "ArrayQueue", ArrayDeque is the standard array-based queue.
+        Queue<String> arrayQueue = new ArrayDeque<>();
+        arrayQueue.offer("ArrayQ1");
+        System.out.println("ArrayQueue (ArrayDeque): " + arrayQueue);
+
+        // 7. PriorityQueue
+        Queue<String> priorityQueue = new PriorityQueue<>();
+        priorityQueue.offer("Banana");
+        priorityQueue.offer("Apple"); 
+        System.out.println("PriorityQueue: " + priorityQueue); 
+
+        System.out.println("\n--- UnsupportedOperationException Cases ---");
+        
+        // Case 1: Modifying an unmodifiable Collection view of a Queue
+        // Modification to unmodifiable views throws UnsupportedOperationException
+        try {
+            Collection<String> unmodifiableQueue = Collections.unmodifiableCollection(queue);
+            System.out.println("Attempting to add to unmodifiable queue view...");
+            unmodifiableQueue.add("This will fail");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Caught Expected UnsupportedOperationException (unmodifiableCollection.add): " + e);
+        }
+
+        // Case 2: Iterator remove on Unmodifiable Collection
+        try {
+            Collection<String> unmodifiableQueue = Collections.unmodifiableCollection(queue);
+            Iterator<String> it = unmodifiableQueue.iterator();
+            if(it.hasNext()) {
+                 System.out.println("Attempting to remove from unmodifiable queue iterator...");
+                 it.next();
+                 it.remove();
+            }
+        } catch (UnsupportedOperationException e) {
+             System.out.println("Caught Expected UnsupportedOperationException (iterator.remove): " + e);
         }
     }
 }
