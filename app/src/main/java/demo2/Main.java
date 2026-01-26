@@ -119,42 +119,59 @@ public class Main {
         //     e.printStackTrace(System.out);
         // }
 
-        // Demonstrate Map.Entry modifiability===================================================================================
-        // Map.Entry<String, String> modEntry = new java.util.AbstractMap.SimpleEntry<>("k", "v");
-        // Map.Entry<String, String> immEntry1 = Map.entry("k", "v"); //returns a unmodifiable entry
-        // Map.Entry<String, String> immEntryFromMap = Collections.unmodifiableMap(Map.of("k", "v")).entrySet().iterator().next();
+        
+        // mapEntryDemo();
 
-        // System.out.println("modEntry before setValue: " + modEntry);
-        // modEntry.setValue("ok");
-        // System.out.println("modEntry after setValue: " + modEntry);
+        // testingSwap(modifiableList, unmodifiableList); 
+
+        // modifiableDequeDemo();
+
+        // queueDemo();
+    }
+
+    public static void mapEntryDemo() {
+        // Demonstrate Map.Entry modifiability===================================================================================
+        System.out.println("\n--- Map.Entry Modifiability Demo ---");
+        Map.Entry<String, String> modEntry = new java.util.AbstractMap.SimpleEntry<>("k", "v");
+        Map.Entry<String, String> immEntry1 = Map.entry("k", "v"); //returns a unmodifiable entry
+        Map.Entry<String, String> immEntryFromMap = Collections.unmodifiableMap(Map.of("k", "v")).entrySet().iterator().next();
+
+        System.out.println("modEntry before setValue: " + modEntry);
+        modEntry.setValue("ok");
+        System.out.println("modEntry after setValue: " + modEntry);
 
         
-        // try {
-        //     immEntry1.setValue("bad");
-        // } catch (UnsupportedOperationException e) {
-        //     System.out.println("Caught UnsupportedOperationException from calling setValue on immEntry1: " + e);
-        //     e.printStackTrace(System.out);
-        // }
+        try {
+            immEntry1.setValue("bad");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Caught UnsupportedOperationException from calling setValue on immEntry1: " + e);
+            e.printStackTrace(System.out);
+        }
 
-        // try {
-        //     // Directly call setValue on an immutable entry extracted from an unmodifiable map
-        //     immEntryFromMap.setValue("bad");
-        // } catch (UnsupportedOperationException e) {
-        //     System.out.println("Caught UnsupportedOperationException when calling setValue on entry from unmodifiable map: " + e);
-        //     e.printStackTrace(System.out);
-        // }
+        try {
+            // Directly call setValue on an immutable entry extracted from an unmodifiable map
+            immEntryFromMap.setValue("bad");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Caught UnsupportedOperationException when calling setValue on entry from unmodifiable map: " + e);
+            e.printStackTrace(System.out);
+        }
+    }
 
-        // Collections.swap(modifiableList, 0, 1); // should be OK
-        // System.out.println("After swap (modifiable): " + modifiableList);
+    public static void testingSwap(List<String> modifiableList, List<String> unmodifiableList) {
+        Collections.swap(modifiableList, 0, 1); // should be OK
+        System.out.println("After swap (modifiable): " + modifiableList);
 
-        // try {
-        //     Collections.swap(unmodifiableList, 0, 1); // throw 
-        // } catch (UnsupportedOperationException e) {
-        //     System.out.println("Caught UnsupportedOperationException when calling swap on unmodifiable list: " + e);
-        //     e.printStackTrace(System.out);
-        // }
+        try {
+            Collections.swap(unmodifiableList, 0, 1); // throw 
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Caught UnsupportedOperationException when calling swap on unmodifiable list: " + e);
+            e.printStackTrace(System.out);
+        }
+    }
 
-        // Demonstrate behavior of unmodifiable Deque with asLifoQueue
+    // Demonstrate behavior of unmodifiable Deque with asLifoQueue
+    public static void modifiableDequeDemo() {
+        System.out.println("\n--- Modifiable Deque Demo ---");
         Deque<String> modDeque = new ArrayDeque<>();
         modDeque.add("one");
         modDeque.add("two");
@@ -173,11 +190,8 @@ public class Main {
             System.out.println("Caught ClassCastException when casting unmodifiableCollection to Deque: " + e);
             e.printStackTrace(System.out);
         }
-
-        // queueDemo();
     }
 
-    
 
     public static void queueDemo() {
         System.out.println("\n--- Queue Demo ---");
