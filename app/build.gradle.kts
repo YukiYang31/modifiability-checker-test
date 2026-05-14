@@ -43,9 +43,9 @@ dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
 
-    compileOnly("org.checkerframework:checker-qual:3.52.1-SNAPSHOT")
-    testCompileOnly("org.checkerframework:checker-qual:3.52.1-SNAPSHOT")
-    checkerFramework("org.checkerframework:checker:3.52.1-SNAPSHOT")
+    compileOnly("org.checkerframework:checker-qual:4.1.1-SNAPSHOT")
+    testCompileOnly("org.checkerframework:checker-qual:4.1.1-SNAPSHOT")
+    checkerFramework("org.checkerframework:checker:4.1.1-SNAPSHOT")
 }
 
 // checkerFramework {

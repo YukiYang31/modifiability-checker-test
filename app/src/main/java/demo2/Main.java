@@ -9,9 +9,14 @@ import org.checkerframework.checker.modifiability.qual.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList; 
+import java.util.AbstractCollection;
+import java.util.AbstractSequentialList;
+import java.util.AbstractSet;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Iterator;
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Deque;
 import java.util.ArrayDeque;
@@ -141,7 +146,228 @@ public class Main {
         // identityHashMapDemo();
         // concurrentHashMapDemo();
 
-        testUnmodifiableCastEscape();
+        iteratorDependentModifiabilityDemo();
+
+        // testUnmodifiableCastEscape();
+    }
+
+    @SuppressWarnings({"method.invocation", "argument"})
+    public static void iteratorDependentModifiabilityDemo() {
+        System.out.println("\n=== iteratorDependentModifiabilityDemo ===");
+
+        IteratorRemoveUnsupportedCollection collection =
+                new IteratorRemoveUnsupportedCollection("a");
+        collection.add("added-directly");
+        System.out.println("Collection supports direct add: " + collection);
+        expectUOE("AbstractCollection.remove uses Iterator.remove",
+                () -> collection.remove("a"));
+        expectUOE("AbstractCollection.removeAll uses Iterator.remove",
+                () -> collection.removeAll(List.of("a")));
+        expectUOE("AbstractCollection.retainAll uses Iterator.remove",
+                () -> collection.retainAll(List.of("not-present")));
+        expectUOE("AbstractCollection.clear uses Iterator.remove",
+                collection::clear);
+        expectUOE("Collection.removeIf uses Iterator.remove",
+                () -> collection.removeIf(s -> true));
+
+        IteratorRemoveUnsupportedSet set = new IteratorRemoveUnsupportedSet("a");
+        expectUOE("AbstractSet.removeAll uses Iterator.remove",
+                () -> set.removeAll(List.of("a")));
+
+        IteratorMutationUnsupportedList list =
+                new IteratorMutationUnsupportedList(120, "a");
+        expectUOE("AbstractSequentialList.set uses ListIterator.set",
+                () -> list.set(0, "b"));
+        expectUOE("AbstractSequentialList.add uses ListIterator.add",
+                () -> list.add(0, "b"));
+        expectUOE("AbstractSequentialList.remove uses ListIterator.remove",
+                () -> list.remove(0));
+        expectUOE("AbstractSequentialList.addAll uses ListIterator.add",
+                () -> list.addAll(0, List.of("b")));
+        expectUOE("List.replaceAll uses ListIterator.set",
+                () -> list.replaceAll(s -> s + "!"));
+        expectUOE("List.sort uses ListIterator.set",
+                () -> list.sort(Comparator.naturalOrder()));
+
+        expectUOE("Collections.sort(list) delegates to List.sort/ListIterator.set",
+                () -> Collections.sort(list));
+        expectUOE("Collections.sort(list, comparator) delegates to List.sort/ListIterator.set",
+                () -> Collections.sort(list, Comparator.naturalOrder()));
+        expectUOE("Collections.reverse falls back to ListIterator.set",
+                () -> Collections.reverse(list));
+        expectUOE("Collections.shuffle falls back to ListIterator.set",
+                () -> Collections.shuffle(list));
+        expectUOE("Collections.fill falls back to ListIterator.set",
+                () -> Collections.fill(list, "b"));
+        expectUOE("Collections.copy falls back to destination ListIterator.set",
+                () -> Collections.copy(list, Collections.nCopies(120, "b")));
+        expectUOE("Collections.rotate falls back through reverse/ListIterator.set",
+                () -> Collections.rotate(list, 1));
+        expectUOE("Collections.replaceAll falls back to ListIterator.set",
+                () -> Collections.replaceAll(list, "a", "b"));
+    }
+
+    private static void expectUOE(String label, Runnable action) {
+        try {
+            action.run();
+            throw new AssertionError("Expected UnsupportedOperationException: " + label);
+        } catch (UnsupportedOperationException expected) {
+            System.out.println("Caught expected UnsupportedOperationException: " + label);
+        }
+    }
+
+    static class IteratorRemoveUnsupportedCollection extends AbstractCollection<String> {
+        private final List<String> elements = new ArrayList<>();
+
+        IteratorRemoveUnsupportedCollection(String... initialElements) {
+            Collections.addAll(elements, initialElements);
+        }
+
+        @Override
+        public boolean add(String element) {
+            return elements.add(element);
+        }
+
+        @Override
+        public Iterator<String> iterator() {
+            return new Iterator<>() {
+                private final Iterator<String> backingIterator = elements.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    return backingIterator.hasNext();
+                }
+
+                @Override
+                public String next() {
+                    return backingIterator.next();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException("iterator.remove is unsupported");
+                }
+            };
+        }
+
+        @Override
+        public int size() {
+            return elements.size();
+        }
+    }
+
+    static class IteratorRemoveUnsupportedSet extends AbstractSet<String> {
+        private final Set<String> elements = new java.util.LinkedHashSet<>();
+
+        IteratorRemoveUnsupportedSet(String... initialElements) {
+            Collections.addAll(elements, initialElements);
+        }
+
+        @Override
+        public Iterator<String> iterator() {
+            return new Iterator<>() {
+                private final Iterator<String> backingIterator = elements.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    return backingIterator.hasNext();
+                }
+
+                @Override
+                public String next() {
+                    return backingIterator.next();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException("iterator.remove is unsupported");
+                }
+            };
+        }
+
+        @Override
+        public int size() {
+            return elements.size();
+        }
+    }
+
+    static class IteratorMutationUnsupportedList extends AbstractSequentialList<String> {
+        private final int size;
+        private final String element;
+
+        IteratorMutationUnsupportedList(int size, String element) {
+            this.size = size;
+            this.element = element;
+        }
+
+        @Override
+        public ListIterator<String> listIterator(int index) {
+            if (index < 0 || index > size) {
+                throw new IndexOutOfBoundsException(index);
+            }
+
+            return new ListIterator<>() {
+                private int cursor = index;
+
+                @Override
+                public boolean hasNext() {
+                    return cursor < size;
+                }
+
+                @Override
+                public String next() {
+                    if (!hasNext()) {
+                        throw new NoSuchElementException();
+                    }
+                    cursor++;
+                    return element;
+                }
+
+                @Override
+                public boolean hasPrevious() {
+                    return cursor > 0;
+                }
+
+                @Override
+                public String previous() {
+                    if (!hasPrevious()) {
+                        throw new NoSuchElementException();
+                    }
+                    cursor--;
+                    return element;
+                }
+
+                @Override
+                public int nextIndex() {
+                    return cursor;
+                }
+
+                @Override
+                public int previousIndex() {
+                    return cursor - 1;
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException("listIterator.remove is unsupported");
+                }
+
+                @Override
+                public void set(String e) {
+                    throw new UnsupportedOperationException("listIterator.set is unsupported");
+                }
+
+                @Override
+                public void add(String e) {
+                    throw new UnsupportedOperationException("listIterator.add is unsupported");
+                }
+            };
+        }
+
+        @Override
+        public int size() {
+            return size;
+        }
     }
 
     public static void testUnmodifiableCastEscape() {
