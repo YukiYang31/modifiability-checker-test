@@ -13,11 +13,13 @@ import java.util.AbstractCollection;
 import java.util.AbstractSequentialList;
 import java.util.AbstractSet;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Deque;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -147,6 +149,7 @@ public class Main {
         // concurrentHashMapDemo();
 
         iteratorDependentModifiabilityDemo();
+        // jdkInheritedIteratorBasedMethodsDemo();
 
         // testUnmodifiableCastEscape();
     }
@@ -155,20 +158,22 @@ public class Main {
     public static void iteratorDependentModifiabilityDemo() {
         System.out.println("\n=== iteratorDependentModifiabilityDemo ===");
 
-        IteratorRemoveUnsupportedCollection collection =
+        // we get UOE error both when c is declared as Collection and IteratorRemoveUnsupportedCollection, 
+        // but our checker could only catch when c is defined as IteratorRemoveUnsupportedCollection. 
+        Collection<String> c =
                 new IteratorRemoveUnsupportedCollection("a");
-        collection.add("added-directly");
-        System.out.println("Collection supports direct add: " + collection);
-        expectUOE("AbstractCollection.remove uses Iterator.remove",
-                () -> collection.remove("a"));
+        c.add("b");
+        System.out.println("Collection supports direct add: " + c);
+        c.remove("b");
+        System.out.println("Collection supports direct remove: " + c);
         expectUOE("AbstractCollection.removeAll uses Iterator.remove",
-                () -> collection.removeAll(List.of("a")));
+                () -> c.removeAll(List.of("a")));
         expectUOE("AbstractCollection.retainAll uses Iterator.remove",
-                () -> collection.retainAll(List.of("not-present")));
+                () -> c.retainAll(List.of("not-present")));
         expectUOE("AbstractCollection.clear uses Iterator.remove",
-                collection::clear);
+                c::clear);
         expectUOE("Collection.removeIf uses Iterator.remove",
-                () -> collection.removeIf(s -> true));
+                () -> c.removeIf(s -> true));
 
         IteratorRemoveUnsupportedSet set = new IteratorRemoveUnsupportedSet("a");
         expectUOE("AbstractSet.removeAll uses Iterator.remove",
@@ -207,12 +212,70 @@ public class Main {
                 () -> Collections.replaceAll(list, "a", "b"));
     }
 
+    public static void jdkInheritedIteratorBasedMethodsDemo() {
+        System.out.println("\n=== jdkInheritedIteratorBasedMethodsDemo ===");
+
+        HashSet<String> hashSet = new HashSet<>(List.of("a", "b"));
+        boolean removedByRemoveIf = hashSet.removeIf("a"::equals);
+        requireState(removedByRemoveIf && hashSet.equals(Set.of("b")),
+                "HashSet.removeIf should remove through inherited Collection.removeIf");
+        System.out.println("HashSet.removeIf succeeded through inherited Collection.removeIf: "
+                + hashSet);
+
+        TreeSet<String> treeSet = new TreeSet<>(List.of("a", "b"));
+        boolean removedByRemoveAll = treeSet.removeAll(Set.of("a", "b", "c"));
+        requireState(removedByRemoveAll && treeSet.isEmpty(),
+                "TreeSet.removeAll should remove through inherited AbstractSet.removeAll");
+        System.out.println("TreeSet.removeAll succeeded through inherited AbstractSet.removeAll: "
+                + treeSet);
+
+        Map<String, String> valueMap = new java.util.HashMap<>();
+        valueMap.put("drop", "x");
+        valueMap.put("keep", "y");
+        Collection<String> values = valueMap.values();
+        boolean valuesChanged = values.retainAll(List.of("y"));
+        requireState(valuesChanged && valueMap.equals(Map.of("keep", "y")),
+                "HashMap.values().retainAll should remove through inherited AbstractCollection.retainAll");
+        System.out.println("HashMap.values().retainAll succeeded through inherited view method: "
+                + valueMap);
+
+        Map<String, String> keyMap = new java.util.HashMap<>();
+        keyMap.put("a", "1");
+        keyMap.put("b", "2");
+        Set<String> keys = keyMap.keySet();
+        boolean keysChanged = keys.removeAll(Set.of("a", "b", "c"));
+        requireState(keysChanged && keyMap.isEmpty(),
+                "HashMap.keySet().removeAll should remove through inherited AbstractSet.removeAll");
+        System.out.println("HashMap.keySet().removeAll succeeded through inherited view method: "
+                + keyMap);
+
+        java.util.concurrent.CopyOnWriteArraySet<String> copyOnWriteSet =
+                new java.util.concurrent.CopyOnWriteArraySet<>(List.of("a", "b"));
+        copyOnWriteSet.removeIf("a"::equals);
+        requireState(copyOnWriteSet.equals(Set.of("b")),
+                "CopyOnWriteArraySet.removeIf should work through its own override");
+        System.out.println("CopyOnWriteArraySet.removeIf succeeded through its override: "
+                + copyOnWriteSet);
+        expectUOE("CopyOnWriteArraySet iterator.remove is unsupported",
+                () -> {
+                    Iterator<String> iterator = copyOnWriteSet.iterator();
+                    iterator.next();
+                    iterator.remove();
+                });
+    }
+
     private static void expectUOE(String label, Runnable action) {
         try {
             action.run();
             throw new AssertionError("Expected UnsupportedOperationException: " + label);
         } catch (UnsupportedOperationException expected) {
             System.out.println("Caught expected UnsupportedOperationException: " + label);
+        }
+    }
+
+    private static void requireState(boolean condition, String message) {
+        if (!condition) {
+            throw new AssertionError(message);
         }
     }
 
@@ -226,6 +289,11 @@ public class Main {
         @Override
         public boolean add(String element) {
             return elements.add(element);
+        }
+
+        @Override
+        public boolean remove(Object element) {
+            return elements.remove(element);
         }
 
         @Override
