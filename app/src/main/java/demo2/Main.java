@@ -9,6 +9,7 @@ import org.checkerframework.checker.modifiability.qual.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList; 
+import java.util.AbstractList;
 import java.util.AbstractCollection;
 import java.util.AbstractSequentialList;
 import java.util.AbstractSet;
@@ -148,10 +149,23 @@ public class Main {
         // identityHashMapDemo();
         // concurrentHashMapDemo();
 
-        iteratorDependentModifiabilityDemo();
+        // iteratorDependentModifiabilityDemo();
+        abstractListRemoveRangeDemo();
         // jdkInheritedIteratorBasedMethodsDemo();
 
         // testUnmodifiableCastEscape();
+    }
+
+    public static void abstractListRemoveRangeDemo() {
+        System.out.println("\n=== abstractListRemoveRangeDemo ===");
+
+        RangeRemoveUnsupportedList list =
+                new RangeRemoveUnsupportedList(List.of("a", "b", "c"));
+
+        expectUOE("AbstractList.removeRangePublic",
+                () -> list.removeRangePublic(0, 2));
+        expectUOE("AbstractList.clear delegates to removeRange",
+                list::clear);
     }
 
     @SuppressWarnings({"method.invocation", "argument"})
@@ -435,6 +449,30 @@ public class Main {
         @Override
         public int size() {
             return size;
+        }
+    }
+
+    static class RangeRemoveUnsupportedList extends AbstractList<String> {
+        private final List<String> elements;
+
+        RangeRemoveUnsupportedList(List<String> elements) {
+            this.elements = elements;
+        }
+
+        public void removeRangePublic(int fromIndex, int toIndex) {
+           removeRange(fromIndex, toIndex);
+        }
+
+         // Expose removeRange as public for testing purposes
+
+        @Override
+        public String get(int index) {
+            return elements.get(index);
+        }
+
+        @Override
+        public int size() {
+            return elements.size();
         }
     }
 
